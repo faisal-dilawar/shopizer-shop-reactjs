@@ -36,6 +36,7 @@ const ProductDescriptionInfo = ({
   const [isDiscount, setIsDiscount] = useState(product.discounted)
   const [selectedProductColor, setSelectedProductColor] = useState([])
   const [quantityCount, setQuantityCount] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState(null)
   useEffect(() => {
     // console.log(strings);
     getDefualtsOption()
@@ -53,10 +54,25 @@ const ProductDescriptionInfo = ({
         })
       })
       setSelectedProductColor(temp)
-      getPrice(temp)
+      const variant = findMatchingVariant(temp);
+      setSelectedVariant(variant);
+      getPrice(temp, variant ? variant.code : null)
     }
   }
 
+
+  const findMatchingVariant = (tempSelectedOptions) => {
+    if (!product.variants || product.variants.length === 0) return null;
+
+    return product.variants.find(v => {
+      // Check if all selected options are present in this variant's variations
+      return tempSelectedOptions.every(selected => {
+        const match1 = v.variation && v.variation.option.name === selected.name && v.variation.optionValue.id === selected.id;
+        const match2 = v.variationValue && v.variationValue.option.name === selected.name && v.variationValue.optionValue.id === selected.id;
+        return match1 || match2;
+      });
+    });
+  }
 
   const onChangeOptions = async (value, option) => {
 
@@ -85,13 +101,18 @@ const ProductDescriptionInfo = ({
       setSelectedProductColor(temp)
     }
     // console.log(tempSelectedOptions);
-    getPrice(tempSelectedOptions)
+    const variant = findMatchingVariant(tempSelectedOptions);
+    setSelectedVariant(variant);
+    getPrice(tempSelectedOptions, variant ? variant.code : null)
 
   }
-  const getPrice = async (tempSelectedOptions) => {
+  const getPrice = async (tempSelectedOptions, variantSku) => {
     setLoader(true)
     let action = constant.ACTION.PRODUCT + productID + '/' + constant.ACTION.PRICE;
     let param = { "options": tempSelectedOptions }
+    if (variantSku) {
+      param.sku = variantSku;
+    }
     try {
       let response = await WebService.post(action, param);
       if (response) {
@@ -291,8 +312,12 @@ const ProductDescriptionInfo = ({
                     options.push({ id: a.id })
                   })
 
+                  const itemToAddToCart = selectedVariant
+                    ? { ...product, sku: selectedVariant.code }
+                    : product;
+
                   addToCart(
-                    product,
+                    itemToAddToCart,
                     addToast,
                     cartItems,
                     quantityCount,
@@ -344,7 +369,7 @@ const ProductDescriptionInfo = ({
         <ul>
           <li >
             <Link to="">
-              {product.sku}
+              {selectedVariant ? selectedVariant.code : product.sku}
             </Link>
           </li>
         </ul>

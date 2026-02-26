@@ -12,54 +12,70 @@ import WebService from '../../util/webService';
 import constant from '../../util/constant';
 import { setLoader } from "../../redux/actions/loaderActions";
 import { multilanguage } from "redux-multilanguage";
-const ProductDetails = ({ strings, location, productID, currentLanguageCode, setLoader, defaultStore }) => {
+const ProductDetails = ({ strings, location, match, currentLanguageCode, setLoader, defaultStore }) => {
   const { pathname } = location;
+  const productID = (match && match.params && match.params.id) ? match.params.id : pathname.split('/').pop();
   const [productDetails, setProductDetails] = useState();
   const [productReview, setProductReview] = useState([]);
 
   useEffect(() => {
-    getProductDetails();
-    getReview();
+    if (productID) {
+      getProductDetails();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [productID, currentLanguageCode]);
+
+  useEffect(() => {
+    if (productDetails && productDetails.id) {
+      getReview(productDetails.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productDetails]);
 
   const getProductDetails = async () => {
     setLoader(true)
-    let action = constant.ACTION.PRODUCTS + productID + '?lang=' + currentLanguageCode + '&store=' + defaultStore;
+    // Use the friendly URL endpoint
+    let action = 'product/friendly/' + productID + '?lang=' + currentLanguageCode + '&store=' + defaultStore;
     try {
       let response = await WebService.get(action);
       if (response) {
-        console.log(response)
         setProductDetails(response)
-        setLoader(false)
       }
+      setLoader(false)
     } catch (error) {
+      console.error("Error fetching product details:", error);
       setLoader(false)
     }
   }
-  const getReview = async () => {
-    let action = constant.ACTION.PRODUCTS + productID + '/reviews?store=' + defaultStore;
+  const getReview = async (id) => {
+    let action = constant.ACTION.PRODUCT + id + '/reviews?store=' + defaultStore;
     try {
       let response = await WebService.get(action);
       if (response) {
         setProductReview(response)
       }
     } catch (error) {
+      console.error("Error fetching reviews:", error);
     }
   }
+  
+  if (!productDetails && !strings) {
+      return null;
+  }
+
   return (
     <Fragment>
       <MetaTags>
-        <title>{productDetails && productDetails.description.title}</title>
+        <title>{productDetails ? productDetails.description.title : (strings ? strings["Product Details"] : "Product")}</title>
         <meta
           name="description"
-          content={productDetails && productDetails.description.metaDescription}
+          content={productDetails ? productDetails.description.metaDescription : ""}
         />
       </MetaTags>
 
-      <BreadcrumbsItem to={process.env.PUBLIC_URL + "/"}>{strings["Home"]}</BreadcrumbsItem>
+      <BreadcrumbsItem to={process.env.PUBLIC_URL + "/"}>{strings ? strings["Home"] : "Home"}</BreadcrumbsItem>
       <BreadcrumbsItem to={process.env.PUBLIC_URL + pathname}>
-        {productDetails && productDetails.description.name}
+        {productDetails ? productDetails.description.name : ""}
       </BreadcrumbsItem>
 
       <Layout headerContainerClass="container-fluid"
@@ -70,13 +86,14 @@ const ProductDetails = ({ strings, location, productID, currentLanguageCode, set
 
         {/* product description with image */}
         {
-          productDetails &&
+          productDetails ?
           <ProductImageDescription
             spaceTopClass="pt-100"
             spaceBottomClass="pb-100"
             strings={strings}
             product={productDetails}
           />
+          : <div className="pt-100 pb-100 text-center">{strings ? strings["Loading..."] : "Loading..."}</div>
         }
 
 
@@ -90,12 +107,6 @@ const ProductDetails = ({ strings, location, productID, currentLanguageCode, set
             review={productReview}
           />
         }
-
-        {/* related product slider */}
-        {/* <RelatedProductSlider
-          spaceBottomClass="pb-95"
-          category={product.category[0]}
-        /> */}
       </Layout>
     </Fragment>
   );
@@ -103,16 +114,15 @@ const ProductDetails = ({ strings, location, productID, currentLanguageCode, set
 
 ProductDetails.propTypes = {
   location: PropTypes.object,
-  productID: PropTypes.number,
+  match: PropTypes.object,
   currentLanguageCode: PropTypes.string,
 };
 
 const mapStateToProps = (state, ownProps) => {
   // const itemId = ownProps.match.params.id;
   return {
-    productID: state.productData.productid,
-    currentLanguageCode: state.multilanguage.currentLanguageCode,
-    defaultStore: state.merchantData.defaultStore
+    currentLanguageCode: state.multilanguage ? state.multilanguage.currentLanguageCode : 'en',
+    defaultStore: state.merchantData ? state.merchantData.defaultStore : 'DEFAULT'
   };
 };
 const mapDispatchToProps = dispatch => {

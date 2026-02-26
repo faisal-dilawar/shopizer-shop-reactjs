@@ -8,10 +8,13 @@ import 'swiper/swiper.scss'
 //import { Swiper } from 'swiper/react';
 //import 'swiper/swiper.scss';
 
+const NO_IMAGE = process.env.PUBLIC_URL + "/assets/img/no-product-image.svg";
+
 const ProductImageGallery = ({ product }) => {
   const [gallerySwiper, getGallerySwiper] = useState(null);
   const [thumbnailSwiper, getThumbnailSwiper] = useState(null);
-  const [currentImage, setCurrentImage] = useState(product.images[0].imageUrl)
+  const hasImages = product.images && product.images.length > 0;
+  const [currentImage, setCurrentImage] = useState(hasImages ? product.images[0].imageUrl : NO_IMAGE)
 
   // effect for swiper slider synchronize
   useEffect(() => {
@@ -77,7 +80,14 @@ const ProductImageGallery = ({ product }) => {
         )} */}
         <LightgalleryProvider>
           <Swiper {...gallerySwiperParams}>
-            {product.images && product.images.length > 0 &&
+            {!hasImages && (
+              <div>
+                <div className="single-image">
+                  <img src={NO_IMAGE} className="img-fluid" alt="No product image" />
+                </div>
+              </div>
+            )}
+            {hasImages &&
               product.images.map((single, key) => {
                 return (
                   <div key={key}>

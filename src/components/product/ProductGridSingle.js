@@ -40,8 +40,9 @@ const ProductGridSingleTwo = ({
           className={`product-wrap-2 ${spaceBottomClass ? spaceBottomClass : ""} ${colorClass ? colorClass : ""} `}>
           <div className="product-img">
             <Link to={process.env.PUBLIC_URL + "/product/" + product.description.friendlyUrl} onClick={() => onClickProductDetails(product.id)}>
-              {product.images && product.images.length > 0}
-                <img src={product.images[0].imageUrl} alt="" />
+                <img
+                  src={product.images && product.images.length > 0 ? product.images[0].imageUrl : process.env.PUBLIC_URL + "/assets/img/no-product-image.svg"}
+                  alt="" />
               
 
             </Link>
