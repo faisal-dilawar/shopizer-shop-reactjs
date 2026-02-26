@@ -2,44 +2,37 @@ name: Shop React CI
 
 on:
   push:
-    branches: [ main, master ]
-    paths:
-      - 'shopizer-shop-reactjs/**'
+    branches: [ main, master, ai_session ]
   pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'shopizer-shop-reactjs/**'
+    branches: [ main, master, ai_session ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '14'
           cache: 'npm'
-          cache-dependency-path: 'shopizer-shop-reactjs/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: shopizer-shop-reactjs
         run: npm install
 
       - name: Build
-        working-directory: shopizer-shop-reactjs
         run: npm run build
 
       - name: Run Tests
-        working-directory: shopizer-shop-reactjs
         run: npm test -- --watchAll=false
         env:
           CI: true
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: shop-react
-          path: shopizer-shop-reactjs/build/
+          path: build/
